@@ -20,17 +20,15 @@ var webServiceBuilder = builder.AddProject<Projects.Hermes_Web>("webfrontend")
     .WaitFor(apiServiceBuilder)
     .WaitFor(proxyServiceBuilder);
 
-// Add Locust load testing container for local development
-if (!isAzureDeployment)
-{
-    var locustContainer = builder.AddDockerfile("locust", Path.Combine(builder.AppHostDirectory, "../../load-tests"))
-        .WithHttpEndpoint(port: 8089, targetPort: 8089, name: "web-ui")
-        .WithEnvironment("LOCUST_HOST", proxyServiceBuilder.GetEndpoint("http"))
-        .WithEnvironment("LOCUST_HEADLESS", "false")
-        .WithEnvironment("LOCUST_USERS", "10")
-        .WithEnvironment("LOCUST_SPAWN_RATE", "2")
-        .WaitFor(proxyServiceBuilder);
-}
+// Add Locust load testing container for both local and Azure deployment
+var locustContainer = builder.AddDockerfile("locust", Path.Combine(builder.AppHostDirectory, "../../load-tests"))
+    .WithHttpEndpoint(port: 8089, targetPort: 8089, name: "web-ui")
+    .WithExternalHttpEndpoints()
+    .WithEnvironment("LOCUST_HOST", proxyServiceBuilder.GetEndpoint("http"))
+    .WithEnvironment("LOCUST_HEADLESS", "false")
+    .WithEnvironment("LOCUST_USERS", "10")
+    .WithEnvironment("LOCUST_SPAWN_RATE", "2")
+    .WaitFor(proxyServiceBuilder);
 
 // Only add Azure-specific configuration when deploying to Azure
 if (isAzureDeployment)
@@ -39,7 +37,7 @@ if (isAzureDeployment)
     var insights = builder.AddAzureApplicationInsights("insights");
     
     // Add Application Insights references to all services
-    apiServiceBuilder = apiServiceBuilder.WithReference(insights);
+    apiServiceBuilder = apiServiceBuilder.WithReference(insights).WithReplicas(40);
     proxyServiceBuilder = proxyServiceBuilder.WithReference(insights);
     webServiceBuilder = webServiceBuilder.WithReference(insights);
     
