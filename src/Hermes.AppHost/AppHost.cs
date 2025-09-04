@@ -37,12 +37,12 @@ if (isAzureDeployment)
     var insights = builder.AddAzureApplicationInsights("insights");
     
     // Add Application Insights references to all services
-    apiServiceBuilder = apiServiceBuilder.WithReference(insights).WithReplicas(40);
+    apiServiceBuilder = apiServiceBuilder.WithReference(insights).WithReplicas(100);
     proxyServiceBuilder = proxyServiceBuilder.WithReference(insights);
     webServiceBuilder = webServiceBuilder.WithReference(insights);
     
     // Set replicas for Azure deployment (local uses 1)
-    proxyServiceBuilder = proxyServiceBuilder.WithReplicas(40);
+    proxyServiceBuilder = proxyServiceBuilder.WithReplicas(100);
 }
 
 builder.Build().Run();
