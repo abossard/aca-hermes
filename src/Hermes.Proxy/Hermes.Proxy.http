@@ -1,0 +1,6 @@
+@Hermes.Proxy_HostAddress = http://localhost:5168
+
+GET {{Hermes.Proxy_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

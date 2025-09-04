@@ -1,0 +1,46 @@
+<Project>
+  <!-- Common, safe defaults -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- Native AOT presets: opt-in per project with <EnableNativeAot>true</EnableNativeAot> -->
+  <PropertyGroup Condition="'$(EnableNativeAot)'=='true'">
+    <!-- Turn on Native AOT publish -->
+    <PublishAot>true</PublishAot>
+    <!-- Native AOT apps are self-contained and need an RID at publish time -->
+    <SelfContained>true</SelfContained>
+
+    <!-- Produce a single-file executable (optional but common) -->
+    <PublishSingleFile>true</PublishSingleFile>
+
+    <!-- Prefer speed over size in codegen (you can set to 'Size' if you prefer) -->
+    <OptimizationPreference>Speed</OptimizationPreference>
+
+    <!-- Trimming/AOT analysis: keep warnings readable by default -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+
+    <!-- Symbols handling for Native AOT:
+         true  = put debug symbols in separate .pdb/.dbg (smaller exe; default on Linux/macOS)
+         false = embed symbols into the native binary (bigger exe, easier debugging)
+    -->
+    <StripSymbols>true</StripSymbols>
+
+    <!-- OPTIONAL: enable globalization-invariant mode *only* if you don't need culture-specific behavior -->
+    <!-- <InvariantGlobalization>true</InvariantGlobalization> -->
+
+    <!-- EXTRA SIZE DIALS (uncomment as needed; verify your app still behaves as expected)
+         See trimming feature switches docs.
+    -->
+    <!-- <DebuggerSupport>false</DebuggerSupport> -->
+    <!-- <EventSourceSupport>false</EventSourceSupport> -->
+    <!-- <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport> -->
+    <!-- <UseSystemResourceKeys>true</UseSystemResourceKeys> -->
+    <!-- <StackTraceSupport>false</StackTraceSupport> -->
+    <!-- NOTE: <Http3Support>false</Http3Support> and <UseSizeOptimizedLinq>true</UseSizeOptimizedLinq> are .NET 10+ -->
+  </PropertyGroup>
+</Project>

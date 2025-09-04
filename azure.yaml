@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: aca-hermes
+services:  
+  app:
+    language: dotnet
+    project: ./src/Hermes.AppHost/Hermes.AppHost.csproj
+    host: containerapp

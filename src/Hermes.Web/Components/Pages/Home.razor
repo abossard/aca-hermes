@@ -1,0 +1,353 @@
+﻿@page "/"
+@inject ApiTestClient ApiClient
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<PageTitle>Hermes Proxy - API Testing</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="display-4">🚀 Hermes Proxy</h1>
+                    <p class="lead">Test direct API calls vs proxy-forwarded requests</p>
+                </div>
+                <div class="badge bg-primary fs-6">
+                    .NET Aspire Service Discovery
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Direct API Call -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-direct-hit"></i> Direct API Call
+                    </h5>
+                    <span class="badge bg-light text-primary">ApiService</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <small>Calls the weather API directly using service discovery</small>
+                    </p>
+                    
+                    <button class="btn btn-primary btn-lg w-100 mb-3" @onclick="CallApiDirectly" disabled="@isLoading">
+                        @if (isLoadingDirect)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Calling API...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-play me-2"></i>
+                            <span>Call Weather API</span>
+                        }
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(directResult))
+                    {
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="text-success mb-0">
+                                    <i class="fas fa-check-circle me-1"></i>Response:
+                                </h6>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => CopyToClipboard(directResult)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <div class="position-relative">
+                                <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code class="language-json">@FormatJson(directResult)</code></pre>
+                                @if (directExecutionTime.HasValue)
+                                {
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-info">@(directExecutionTime.Value.TotalMilliseconds.ToString("F0"))ms</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Proxy API Call -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt"></i> Proxy API Call
+                    </h5>
+                    <span class="badge bg-light text-success">Hermes.Proxy</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <small>Calls the weather API through the Hermes proxy service</small>
+                    </p>
+                    
+                    <button class="btn btn-success btn-lg w-100 mb-3" @onclick="CallApiViaProxy" disabled="@isLoading">
+                        @if (isLoadingProxy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Calling via Proxy...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-route me-2"></i>
+                            <span>Call via Proxy</span>
+                        }
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(proxyResult))
+                    {
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="text-success mb-0">
+                                    <i class="fas fa-check-circle me-1"></i>Response:
+                                </h6>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => CopyToClipboard(proxyResult)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <div class="position-relative">
+                                <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code class="language-json">@FormatJson(proxyResult)</code></pre>
+                                @if (proxyExecutionTime.HasValue)
+                                {
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-info">@(proxyExecutionTime.Value.TotalMilliseconds.ToString("F0"))ms</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Testing Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-flask"></i> External API Testing
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Test the proxy with external APIs</p>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-info w-100" @onclick="CallHttpBinJson" disabled="@isLoadingExternal">
+                                @if (isLoadingExternal)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                }
+                                <i class="fas fa-globe me-1"></i>
+                                HTTPBin JSON
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-warning w-100" @onclick="CallErrorTest" disabled="@isLoadingExternal">
+                                @if (isLoadingExternal)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                }
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Test Error (500)
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-secondary w-100" @onclick="CallDelayTest" disabled="@isLoadingExternal">
+                                @if (isLoadingExternal)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                }
+                                <i class="fas fa-clock me-1"></i>
+                                Test Delay (3s)
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(externalResult))
+                    {
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">External API Result:</h6>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => CopyToClipboard(externalResult)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <div class="position-relative">
+                                <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><code>@FormatJson(externalResult)</code></pre>
+                                @if (externalExecutionTime.HasValue)
+                                {
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-info">@(externalExecutionTime.Value.TotalMilliseconds.ToString("F0"))ms</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .language-json {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border: none;
+    }
+</style>
+
+@code {
+    private string directResult = "";
+    private string proxyResult = "";
+    private string externalResult = "";
+    
+    private bool isLoadingDirect = false;
+    private bool isLoadingProxy = false;
+    private bool isLoadingExternal = false;
+    private bool isLoading => isLoadingDirect || isLoadingProxy || isLoadingExternal;
+    
+    private TimeSpan? directExecutionTime;
+    private TimeSpan? proxyExecutionTime;
+    private TimeSpan? externalExecutionTime;
+
+    private async Task CallApiDirectly()
+    {
+        isLoadingDirect = true;
+        directResult = "";
+        directExecutionTime = null;
+        StateHasChanged();
+        
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            directResult = await ApiClient.CallApiDirectlyAsync();
+        }
+        finally
+        {
+            stopwatch.Stop();
+            directExecutionTime = stopwatch.Elapsed;
+            isLoadingDirect = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CallApiViaProxy()
+    {
+        isLoadingProxy = true;
+        proxyResult = "";
+        proxyExecutionTime = null;
+        StateHasChanged();
+        
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            proxyResult = await ApiClient.CallApiViaProxyAsync();
+        }
+        finally
+        {
+            stopwatch.Stop();
+            proxyExecutionTime = stopwatch.Elapsed;
+            isLoadingProxy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CallExternalApi(string url)
+    {
+        isLoadingExternal = true;
+        externalResult = "";
+        externalExecutionTime = null;
+        StateHasChanged();
+        
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            externalResult = await ApiClient.CallExternalApiViaProxyAsync(url);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            externalExecutionTime = stopwatch.Elapsed;
+            isLoadingExternal = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CallHttpBinJson()
+    {
+        await CallExternalApi("https://httpbin.org/json");
+    }
+
+    private async Task CallErrorTest()
+    {
+        await CallExternalApi("https://httpbin.org/status/500");
+    }
+
+    private async Task CallDelayTest()
+    {
+        await CallExternalApi("https://httpbin.org/delay/3");
+    }
+
+    private string FormatJson(string json)
+    {
+        try
+        {
+            // Try to parse and format as JSON
+            var jsonDocument = JsonDocument.Parse(json);
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            return JsonSerializer.Serialize(jsonDocument, options);
+        }
+        catch
+        {
+            // If not valid JSON, return as-is
+            return json;
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // Clipboard API not available - silent fail
+        }
+    }
+}
