@@ -190,6 +190,168 @@ Proxy Error: Connection refused
 - Automatic KEDA integration for event-driven scaling
 - DataProtection configuration for multi-instance deployments
 
+## Deployment to Azure
+
+This .NET Aspire application can be deployed to Azure Container Apps using the Azure Developer CLI (azd) for a seamless cloud deployment experience.
+
+### Prerequisites
+
+1. **Install Azure Developer CLI**:
+   ```bash
+   # macOS
+   brew tap azure/azd && brew install azd
+   
+   # Windows (winget)
+   winget install microsoft.azd
+   
+   # Windows (PowerShell)
+   powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression"
+   
+   # Linux
+   curl -fsSL https://aka.ms/install-azd.sh | bash
+   ```
+
+2. **Required tools** (automatically managed by azd):
+   - Azure CLI
+   - Docker Desktop (for container builds)
+   - .NET 9.0 SDK
+
+3. **Azure Account**:
+   - Active Azure subscription
+   - Sufficient permissions to create resources
+
+### Deploy to Azure
+
+1. **Initialize for Azure deployment**:
+   ```bash
+   azd init
+   ```
+   - azd will automatically detect this as a .NET Aspire project
+   - Choose which services should have public HTTP ingress (typically just `Hermes.Web`)
+   - Set an environment name (e.g., `dev`, `staging`, `prod`)
+
+2. **Login to Azure**:
+   ```bash
+   azd auth login
+   ```
+
+3. **Deploy everything with one command**:
+   ```bash
+   azd up
+   ```
+   
+   This single command will:
+   - ✅ **Provision** Azure resources (Container Apps Environment, Container Registry, Log Analytics, etc.)
+   - 🐳 **Build** container images using .NET's built-in container support
+   - 🚀 **Deploy** all services to Azure Container Apps
+   - 🔗 **Configure** service discovery and networking
+   - 📊 **Set up** observability with Application Insights and Aspire Dashboard
+
+### Deployment Architecture
+
+When deployed to Azure, the application uses:
+
+- **🏗️ Azure Container Apps**: Serverless Kubernetes platform hosting all services
+- **📦 Azure Container Registry**: Private registry for container images  
+- **🔍 Azure Log Analytics**: Centralized logging and monitoring
+- **📈 Application Insights**: APM and distributed tracing
+- **🌐 Azure DNS**: Service discovery and load balancing
+- **🔒 Azure Key Vault**: Secure configuration and secrets management
+- **📊 Aspire Dashboard**: Hosted observability dashboard in the cloud
+
+### Common Commands
+
+```bash
+# Deploy only code changes (faster than azd up)
+azd deploy
+
+# Deploy specific service
+azd deploy hermes-web
+
+# Update infrastructure when AppHost dependencies change
+azd provision
+
+# Monitor deployment
+azd monitor
+
+# Get service endpoints
+azd show
+
+# View environment details
+azd env list
+azd env show
+
+# Clean up all Azure resources
+azd down
+```
+
+### Environment Management
+
+azd supports multiple environments for different deployment stages:
+
+```bash
+# Create new environment
+azd env new staging
+
+# Switch between environments  
+azd env select production
+
+# List all environments
+azd env list
+```
+
+### Configuration
+
+The deployment can be customized via the `azure.yaml` file and Bicep infrastructure templates that azd generates. Key features:
+
+- **🔄 Auto-scaling**: Container Apps automatically scale based on HTTP traffic
+- **💰 Cost-effective**: Pay only for actual usage with scale-to-zero capability
+- **🛡️ Security**: Private networking between services, HTTPS by default
+- **📊 Observability**: Full OpenTelemetry integration with Azure monitoring stack
+- **🚀 CI/CD Ready**: Use `azd pipeline config` to set up GitHub Actions or Azure DevOps
+
+### Chaos Engineering in Production
+
+The ApiService chaos middleware is configurable via environment variables in Azure:
+
+```bash
+# Disable chaos in production
+azd env set CHAOS__ENABLED false
+
+# Reduce chaos percentages for staging
+azd env set CHAOS__DELAYPERCENTAGE 0.02
+azd env set CHAOS__FAILUREPERCENTAGE 0.01
+
+# Apply configuration changes
+azd deploy
+```
+
+### Production Considerations
+
+- **Native AOT Proxy**: The Hermes.Proxy service uses Native AOT for minimal cold start times and memory usage
+- **Resource Limits**: Review and adjust CPU/memory limits in the generated Bicep templates
+- **Scaling Rules**: Configure auto-scaling based on your expected traffic patterns  
+- **Monitoring**: Set up alerts in Application Insights for critical metrics
+- **Security**: Enable managed identity and private endpoints as needed
+
+### Troubleshooting
+
+```bash
+# View deployment logs
+azd monitor --logs
+
+# Check service status
+azd show
+
+# Debug infrastructure issues
+azd provision --debug
+
+# Access remote environment logs
+az containerapp logs show --name hermes-web --resource-group rg-<env-name>
+```
+
+For detailed guidance, see the [official .NET Aspire Azure deployment documentation](https://learn.microsoft.com/en-us/dotnet/aspire/deployment/azure/aca-deployment-azd-in-depth).
+
 # Todo
 
 (For each task: Search and make a plan in a separate markdown file with mermaid diagram)

@@ -3,7 +3,12 @@
     "allow": [
       "Bash(dotnet build)",
       "Bash(dotnet build:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(dotnet run:*)",
+      "Bash(docker build:*)",
+      "Read(//Users/abossard/Desktop/projects/**)",
+      "Bash(docker run:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []
